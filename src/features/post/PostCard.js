@@ -24,7 +24,7 @@ import PostReaction from "./PostReaction";
 import CommentForm from "../comment/CommentForm";
 import CommentList from "../comment/CommentList";
 import useAuth from "../../hooks/useAuth";
-import { deletePost, editPost } from "./postSlice";
+import {  editPost } from "./postSlice";
 import ModalConfirm from "./ModalConfirm";
 
 const style = {
