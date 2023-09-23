@@ -149,7 +149,7 @@ export const getFriendRequests =
     try {
       const params = { page, limit };
       if (filterName) params.name = filterName;
-      const response = await apiService.get("/friends/requests/incoming", {
+      const response = await apiService.get("/friends/requests/outgoing", {
         params,
       });
       dispatch(slice.actions.getFriendRequestsSuccess(response.data));

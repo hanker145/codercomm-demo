@@ -20,7 +20,9 @@ function FriendRequests() {
   const { currentPageUsers, usersById, totalUsers, totalPages } = useSelector(
     state => state.friend
   )
+ 
   const users = currentPageUsers.map(userId => usersById[userId])
+  console.log(users)
   const dispatch = useDispatch()
 
   const handleSubmit = searchQuery => {
