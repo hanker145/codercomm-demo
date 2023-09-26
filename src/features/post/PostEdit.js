@@ -1,12 +1,12 @@
-import React, { useCallback } from "react";
+import { alpha, Box, Card, Stack, Button } from "@mui/material";
 import { FormProvider, FTextField, FUploadImage } from "../../components/form";
-import { useForm } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as Yup from "yup";
+import { editPost } from "./postSlice";
+import { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { createPost } from "./postSlice";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useForm } from "react-hook-form";
+import * as Yup from "yup";
 import { LoadingButton } from "@mui/lab";
-import { alpha, Box, Card, Stack } from "@mui/material";
 
 const yupSchema = Yup.object().shape({
   content: Yup.string().required("Content is required"),
@@ -17,8 +17,7 @@ const defaultValues = {
   image: "",
 };
 
-function PostForm() {
-  const { isLoading } = useSelector((state) => state.post);
+function PostEdit({ post, handleCloseModal }) {
   const methods = useForm({
     resolver: yupResolver(yupSchema),
     defaultValues,
@@ -27,18 +26,12 @@ function PostForm() {
   const {
     handleSubmit,
     reset,
-    setValue,
     formState: { isSubmitting },
+    setValue,
   } = methods;
 
   const dispatch = useDispatch();
-
-  // const handleFile = (e) => {
-  //   const file = fileInput.current.files[0];
-  //   if (file) {
-  //     setValue("image", file);
-  //   }
-  // };
+  const { isLoading } = useSelector((state) => state.post);
 
   const handleDrop = useCallback(
     (acceptedFiles) => {
@@ -57,9 +50,12 @@ function PostForm() {
   );
 
   const onSubmit = (data) => {
-    // alert(JSON.string(data));
-    dispatch(createPost(data)).then(() => reset());
-    // console.log(data);
+    data.postId = post._id;
+    data.userId = post.author._id;
+    dispatch(editPost(data)).then(() => {
+      reset();
+      handleCloseModal();
+    });
   };
 
   return (
@@ -87,21 +83,16 @@ function PostForm() {
             onDrop={handleDrop}
           />
 
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-end",
-            }}
-          >
+          <Box sx={{ display: "flex", justifyContent: "space-around", mt: 2 }}>
             <LoadingButton
+              variant="outlined"
               type="submit"
-              variant="contained"
               size="small"
               loading={isSubmitting || isLoading}
             >
-              Post
+              Save
             </LoadingButton>
+            <Button onClick={handleCloseModal}>Cancel</Button>
           </Box>
         </Stack>
       </FormProvider>
@@ -109,4 +100,4 @@ function PostForm() {
   );
 }
 
-export default PostForm;
+export default PostEdit;

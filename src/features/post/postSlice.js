@@ -3,6 +3,7 @@ import apiService from "../../app/apiService"
 import { POST_PER_PAGE } from "../../app/config";
 import { cloudinaryUpload } from "../../utils/cloudinary";
 import { toast } from "react-toastify";
+import { getCurrentUserProfile } from "../user/userSlice";
 
 const initialState = {
     isLoading: false,
@@ -10,72 +11,68 @@ const initialState = {
     postsById: {},
     currentPagePosts: []
 }
-
 const slice = createSlice({
-    name: "post",
-    initialState,
-    reducers: {
-        startLoading(state) {
-            state.isLoading = true;
-        },
-        hasError(state, action) {
-            state.isLoading = false;
-            state.error = action.payload;
-        },
-        createPostSuccess(state, action) {
-            state.isLoading = false;
-            state.error = null;
-            const newPost = action.payload;
-            if (state.currentPagePosts.length % POST_PER_PAGE === 0)
-             state.currentPagePosts.pop();
-            state.postsById[newPost._id] = newPost;
-            state.currentPagePosts.unshift(newPost._id);
-        },
-        getPostSuccess(state, action) {
-            state.isLoading = false;
-            state.error = null;
-            const {count, posts} = action.payload
-            posts.forEach(post => {
-                state.postsById[post._id] = post;
-                if (!state.currentPagePosts.includes(post._id))
-                 state.currentPagePosts.push(post._id);
-            })
-            state.totalPosts = count;
-        },
-        sendPostReactionSuccess(state, action) {
-          state.isLoading = false;
-          state.error = null;
-          const { postId, reactions } = action.payload;
-          state.postsById[postId].reactions = reactions;
-        },
-        resetPosts(state, action) {
-          state.postsById = {};
-          state.currentPagePosts = [];
-        },
-        editPostSuccess(state, action) {
-          state.isLoading = false;
-          state.error = null;
-          const editPost = action.payload;
-    
-          state.postsById = {
-            ...state.postsById,
-            [editPost._id]: editPost,
-          };
-        },
-        deletedPostSuccess(state, action) {
-          state.isLoading = false;
-          state.error = null;
-          const idPostDelete = action.payload;
-          state.currentPagePosts = state.currentPagePosts.filter(
-            (post) => post !== idPostDelete
-          );
-          delete state.postsById[idPostDelete];
-          state.totalPosts = Object.keys(state.postsById).length;
-        },
+  name: "post",
+  initialState,
+  reducers: {
+    startLoading(state) {
+      state.isLoading = true;
+    },
+    hasError(state, action) {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
+    resetPosts(state, action) {
+      state.postsById = {};
+      state.currentPagePosts = [];
+    },
 
+    createPostSuccess(state, action) {
+      state.isLoading = false;
+      state.error = null;
+      const newPost = action.payload;
+      if (state.currentPagePosts.length % POST_PER_PAGE === 0)
+        state.currentPagePosts.pop();
+      state.postsById[newPost._id] = newPost;
+      state.currentPagePosts.unshift(newPost._id);
+    },
 
-    }
-})
+    getPostSuccess(state, action) {
+      state.isLoading = false;
+      state.error = null;
+
+      const { posts, count } = action.payload;
+      posts.forEach((post) => {
+        state.postsById[post._id] = post;
+        if (!state.currentPagePosts.includes(post._id))
+          state.currentPagePosts.push(post._id);
+      });
+      state.totalPosts = count;
+    },
+
+    sendPostReactionSuccess(state, action) {
+      state.isLoading = false;
+      state.error = null;
+      // console.log("sendreactions", action.payload);
+      const { postId, reactions } = action.payload;
+      state.postsById[postId].reactions = reactions;
+    },
+    deletePostSuccess(state, action) {
+      state.isLoading = false;
+      state.error = null;
+      // console.log(action.payload);
+
+      state.currentPagePosts = state.currentPagePosts.filter(
+        (item) => item !== action.payload._id
+      );
+    },
+    editPostSuccess(state, action) {
+      state.isLoading = false;
+      state.error = null;
+    },
+  },
+});
+
 
 export const createPost =
   ({ content, image }) =>
@@ -134,31 +131,47 @@ export const getPosts =
     }
   };
 
-  export const deletePost = (id) => async (dispatch) => {
+
+
+  export const deletePost =
+  ({ postId }) =>
+  async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await apiService.delete(`/posts/${id}`);
-      dispatch(slice.actions.deletedPostSuccess(response.data._id));
-      // call get post
-      toast.success("deleted post successfully");
-      // dispatch(getCurrentUserProfile());
+
+      const response = await apiService.delete(`/posts/${postId}`);
+      dispatch(slice.actions.deletePostSuccess(response.data));
+      toast.success("Post Deleted");
     } catch (error) {
       dispatch(slice.actions.hasError(error.message));
       toast.error(error.message);
     }
   };
 
-  export const editPost = (id, data) => async (dispatch) => {
+  export const editPost =
+  ({ postId, content, image, userId }) =>
+  async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await apiService.put(`/posts/${id}`, { content: data });
-      dispatch(slice.actions.editPostSuccess(response.data));
-      toast.success("edited post successfully");
-      // dispatch(getCurrentUserProfile());
+      const imageUrl = await cloudinaryUpload(image);
+      const data = {
+        content,
+      };
+
+      if (imageUrl) {
+        data.image = imageUrl;
+      }
+      const response = await apiService.put(`/posts/${postId}`, data);
+
+      dispatch(slice.actions.editPostSuccess(response.data.data));
+      toast.success("Post edited");
+      dispatch(getCurrentUserProfile());
+      dispatch(getPosts({ userId }));
     } catch (error) {
       dispatch(slice.actions.hasError(error.message));
       toast.error(error.message);
     }
   };
+
   
 export default slice.reducer

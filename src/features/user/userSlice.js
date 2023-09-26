@@ -53,7 +53,7 @@ export const getUser = id => async dispatch => {
   }
 
   export const updateUserProfile = ({
-    userId,
+  userId,
   name,
   avatarUrl,
   coverUrl,
@@ -78,7 +78,8 @@ export const getUser = id => async dispatch => {
           facebookLink,
           instagramLink,
           linkedinLink,
-          twitterLink
+          twitterLink,
+          avatarUrl
         }
         if (avatarUrl instanceof File) {
           const imageUrl = await cloudinaryUpload(avatarUrl)
@@ -95,3 +96,13 @@ export const getUser = id => async dispatch => {
     }
 
 export default slice.reducer
+
+export const getCurrentUserProfile = () => async dispatch => {
+  dispatch(slice.actions.startLoading())
+  try {
+    const response = await apiService.get('/users/me')
+    dispatch(slice.actions.updateUserProfileSuccess(response.data))
+  } catch (error) {
+    dispatch(slice.actions.hasError(error))
+  }
+}
